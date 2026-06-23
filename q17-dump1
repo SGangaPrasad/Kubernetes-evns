@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+
+# Create required directory
+mkdir -p /opt/course/17/
+
+# Create the project-tiger namespace if it doesn't exist
+kubectl create namespace project-tiger --dry-run=client -o yaml | kubectl apply -f -
+
+echo "✅ Environment setup complete! Target directory /opt/course/17/ is ready."
