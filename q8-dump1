@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+# Generate a fresh bootstrap token to simulate an active join window
+kubeadm token create --print-join-command > /tmp/mock-join-command.sh
+
+echo "✅ Environment setup complete! A real join token command has been generated at /tmp/mock-join-command.sh"
+echo "You can check your target cluster version using 'kubectl get nodes'."
