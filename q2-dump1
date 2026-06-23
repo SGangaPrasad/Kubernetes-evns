@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+# Create the required directory
+mkdir -p /opt/course/2/
+
+# Create the initial cluster-issuer.yaml file without the CRL property
+cat <<EOF > /opt/course/2/cluster-issuer.yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+EOF
+
+echo "✅ Environment setup complete! Template created at /opt/course/2/cluster-issuer.yaml"
