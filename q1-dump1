@@ -1,0 +1,48 @@
+#!/bin/bash
+set -e
+
+# Create the required directory
+mkdir -p /opt/course/1/
+
+# Generate a fake base64 string for the certificate to simulate a real kubeconfig
+MOCK_CERT_BASE64=$(echo "CKA-CONFIDENTIAL-CLIENT-CERT-DATA" | base64)
+
+# Create the mock kubeconfig file
+cat <<EOF > /opt/course/1/kubeconfig
+apiVersion: v1
+kind: Config
+preferences: {}
+current-context: research-frontend
+
+clusters:
+- name: development-cluster
+  cluster:
+    server: https://10.96.0.1:6443
+- name: production-cluster
+  cluster:
+    server: https://10.96.0.2:6443
+
+users:
+- name: account-0027
+  user:
+    client-certificate-data: ${MOCK_CERT_BASE64}
+- name: admin-user
+  user:
+    token: secret-token-123
+
+contexts:
+- name: dev-frontend
+  context:
+    cluster: development-cluster
+    user: admin-user
+- name: prod-backend
+  context:
+    cluster: production-cluster
+    user: admin-user
+- name: research-frontend
+  context:
+    cluster: development-cluster
+    user: account-0027
+EOF
+
+echo "✅ Environment setup complete! File created at /opt/course/1/kubeconfig"
