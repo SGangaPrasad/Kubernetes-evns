@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+
+# Create required directories
+mkdir -p /opt/course/4/
+
+# Create namespace
+kubectl create namespace project-c13 --dry-run=client -o yaml | kubectl apply -f -
+
+# 1. BestEffort Pod (No requests/limits) -> WILL BE TERMINATED FIRST
+kubectl run alpine-besteffort -n project-c13 --image=alpine --command -- sleep 3600
+
+# 2. Burstable Pod (Has requests, or mismatched limits)
+kubectl run alpine-burstable -n project-c13 --image=alpine --requests=cpu=100m,memory=50Mi --command -- sleep 3600
+
+# 3. Guaranteed Pod (Requests == Limits)
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpine-guaranteed
+  namespace: project-c13
+spec:
+  containers:
+  - name: alpine
+    image: alpine
+    command: ["sleep", "3600"]
+    resources:
+      requests:
+        cpu: 100m
+        memory: 50Mi
+      limits:
+        cpu: 100m
+        memory: 50Mi
+EOF
+
+echo "✅ Environment setup complete! Pods are running in namespace project-c13."
