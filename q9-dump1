@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+# Create required directory
+mkdir -p /opt/course/9/
+
+# Create namespace
+kubectl create namespace project-swan --dry-run=client -o yaml | kubectl apply -f -
+
+# Create ServiceAccount
+kubectl create serviceaccount secret-reader -n project-swan --dry-run=client -o yaml | kubectl apply -f -
+
+# Grant Secret viewing permissions to the ServiceAccount (so curl works correctly)
+kubectl create role secret-view --verb=get,list --resource=secrets -n project-swan --dry-run=client -o yaml | kubectl apply -f -
+kubectl create rolebinding secret-reader-view --role=secret-view --serviceaccount=project-swan:secret-reader -n project-swan --dry-run=client -o yaml | kubectl apply -f -
+
+echo "✅ Environment setup complete! Ready to deploy the Pod."
