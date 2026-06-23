@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+# Create required namespace
+kubectl create namespace project-tiger --dry-run=client -o yaml | kubectl apply -f -
+
+echo "✅ Environment setup complete! Namespace project-tiger is ready."
