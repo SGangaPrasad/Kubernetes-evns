@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+# Create required namespace
+kubectl create namespace project-t230 --dry-run=client -o yaml | kubectl apply -f -
+
+# Simulate hostpath directory on the node (optional, helps prevent mount errors)
+# If practicing on multi-node, this directory would ideally exist on the worker node.
+mkdir -p /Volumes/Data
+
+echo "✅ Environment setup complete! Namespace project-t230 is ready."
