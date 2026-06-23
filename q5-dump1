@@ -1,0 +1,73 @@
+#!/bin/bash
+set -e
+
+# Create directories
+BASE_DIR="/opt/course/5/api-gateway"
+mkdir -p ${BASE_DIR}/base
+mkdir -p ${BASE_DIR}/staging
+mkdir -p ${BASE_DIR}/prod
+
+# 1. Create Base Deployment & ConfigMap
+cat <<EOF > ${BASE_DIR}/base/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: gateway
+        image: nginx:alpine
+        resources:
+          requests:
+            cpu: 100m
+EOF
+
+cat <<EOF > ${BASE_DIR}/base/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: horizontal-scaling-config
+data:
+  scale-factor: "high"
+EOF
+
+cat <<EOF > ${BASE_DIR}/base/kustomization.yaml
+resources:
+- deployment.yaml
+- configmap.yaml
+EOF
+
+# 2. Create Staging Overlay
+cat <<EOF > ${BASE_DIR}/staging/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: api-gateway-staging
+resources:
+- ../base
+EOF
+
+# 3. Create Prod Overlay
+cat <<EOF > ${BASE_DIR}/prod/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: api-gateway-prod
+resources:
+- ../base
+EOF
+
+# Pre-apply the initial (old) state to the cluster
+kubectl create namespace api-gateway-staging --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace api-gateway-prod --dry-run=client -o yaml | kubectl apply -f -
+kubectl kustomize ${BASE_DIR}/staging | kubectl apply -f -
+kubectl kustomize ${BASE_DIR}/prod | kubectl apply -f -
+
+echo "✅ Environment setup complete! Old configurations applied to 'api-gateway-staging' and 'api-gateway-prod'."
