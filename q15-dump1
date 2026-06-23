@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+# Create namespace
+kubectl create namespace project-snake --dry-run=client -o yaml | kubectl apply -f -
+
+# Launch Pods with specific matching app labels
+kubectl run backend-prod -n project-snake --image=nginx:alpine --labels="app=backend-prod"
+kubectl run db1-primary -n project-snake --image=nginx:alpine --labels="app=db1-primary"
+kubectl run db2-secondary -n project-snake --image=nginx:alpine --labels="app=db2-secondary"
+kubectl run vault-secure -n project-snake --image=nginx:alpine --labels="app=vault-secure"
+
+echo "✅ Environment setup complete! Pods are spinning up in namespace project-snake."
