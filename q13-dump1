@@ -1,0 +1,62 @@
+#!/bin/bash
+set -e
+
+# Create required directories
+mkdir -p /opt/course/13/
+
+# Create namespace
+kubectl create namespace project-r500 --dry-run=client -o yaml | kubectl apply -f -
+
+# 1. Mock the backend Services so the routing targets are valid
+for backend in desktop mobile; do
+  kubectl create service clusterip "$backend" -n project-r500 --tcp=80:80 --dry-run=client -o yaml | kubectl apply -f -
+done
+
+# 2. Setup the old Ingress template file
+cat <<EOF > /opt/course/13/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: old-traffic-router
+  namespace: project-r500
+spec:
+  rules:
+  - host: r500.gateway
+    http:
+      paths:
+      - path: /desktop
+        pathType: Prefix
+        backend:
+          service:
+            name: desktop
+            port:
+              number: 80
+      - path: /mobile
+        pathType: Prefix
+        backend:
+          service:
+            name: mobile
+            port:
+              number: 80
+EOF
+
+# 3. Create a dummy Gateway resource to bind the HTTPRoute to
+# (Simulating an environment that already has Gateway API CRDs/Controllers installed)
+kubectl apply -f - <<EOF
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: external-gateway
+  namespace: project-r500
+spec:
+  gatewayClassName: example-gateway-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: Same
+EOF
+
+echo "✅ Environment setup complete! Old ingress available at /opt/course/13/ingress.yaml"
